@@ -1,0 +1,25 @@
+﻿/*
+  FretboardMaster - グローバルスタイル
+  コンポーネント固有のスタイルは各 .vue ファイル内で定義
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #0d0e1a;
+  color: #e0d4c0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  /* App.vue がレイアウトを管理 */
+}
