@@ -29,7 +29,7 @@
 ## 🚀 使い方
 
 ### オンラインで使う
-デモサイト：[https://your-username.github.io/FretboardMaster/](https://your-username.github.io/FretboardMaster/)
+デモサイト：[https://mu-sasaki-imp.github.io/fretboard-master/](https://mu-sasaki-imp.github.io/fretboard-master/)
 
 ### ローカルで動かす
 
@@ -60,7 +60,12 @@ MIT License
 
 ## 🎵 作者
 
-ギター初心者の音名暗記を助けるために作成しました。
+何年経っても指板の音を覚えられないので、自分とギター初心者の音名暗記を助けるために作成しました☆
+
+今回のアプリ作成はClaudeさんの力をお借りしていますが、
+普段はイラストを描いたり、作曲をしたりしています（もちろんAI不使用です！）
+
+作者Xアカウント：[https://x.com/mu_sasaki_imp]（@mu_sasaki_imp）
 
 ---
 
