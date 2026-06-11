@@ -344,7 +344,15 @@ function handleMode3QuestionChange(data) {
     <!-- ヘッダー -->
     <header class="app-header">
       <h1 class="title">🎸 FretboardMaster</h1>
-      <p class="subtitle">ギター指板の音名をマスターしよう</p>
+      <p class="subtitle">
+        ギター指板の音名をマスターしよう！ | created by 
+        <a href="https://x.com/mu_sasaki_imp" target="_blank" rel="noopener noreferrer" class="author-link">
+          <svg class="x-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          @mu_sasaki_imp
+        </a>
+      </p>
     </header>
 
     <!-- モード切り替えタブ（メイン） -->
@@ -475,6 +483,31 @@ function handleMode3QuestionChange(data) {
   margin: 4px 0 0;
   font-size: 13px;
   color: #7a6a50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.author-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #7a6a50;
+  text-decoration: none;
+  transition: color 0.2s;
+  font-size: 12px;
+}
+
+.author-link:hover {
+  color: #fbbf24;
+}
+
+.x-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
 /* モードタブ */

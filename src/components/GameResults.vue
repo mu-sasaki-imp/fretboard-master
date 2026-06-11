@@ -87,15 +87,15 @@ function formatTime(seconds) {
           >
             <span class="mistake-question">
               {{ results.mode === 'mode1' 
-                  ? `${answer.question.string + 1}弦 ${answer.question.fret}フレット`
-                  : `${answer.question.string + 1}弦の「${answer.question.targetNote}」`
+                  ? `${answer.question.string}弦 ${answer.question.fret}フレット`
+                  : `${answer.question.string}弦の「${answer.question.note}」`
               }}
             </span>
             <span class="mistake-arrow">→</span>
             <span class="mistake-answer">
               {{ results.mode === 'mode1'
-                  ? answer.question.correctNote
-                  : `${answer.question.correctFret}フレット`
+                  ? answer.question.note
+                  : `${answer.question.fret}フレット`
               }}
             </span>
           </div>
