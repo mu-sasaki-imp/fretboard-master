@@ -67,7 +67,7 @@ MIT License
 今回のアプリ作成はClaudeさんの力をお借りしていますが、
 普段はイラストを描いたり、作曲をしたりしています（もちろんAI不使用です！）
 
-作者Xアカウント：[https://x.com/mu_sasaki_imp]（@mu_sasaki_imp）
+作者Xアカウント：[@mu_sasaki_imp](https://x.com/mu_sasaki_imp)
 
 ---
 
