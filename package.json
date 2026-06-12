@@ -1,7 +1,7 @@
 {
   "name": "fretboardmaster",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "ギターの指板上の音名を楽しく覚えるWebアプリ。クイズモード、練習アシストモードを搭載。",
   "author": "Your Name",

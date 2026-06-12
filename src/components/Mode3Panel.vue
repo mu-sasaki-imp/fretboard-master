@@ -3,6 +3,10 @@ import { ref, computed, onUnmounted } from 'vue'
 import { NOTES, OPEN_STRINGS } from '../utils/music.js'
 import { recordMode3Session, getMode3Stats } from '../utils/storage.js'
 
+const props = defineProps({
+  scaleFilter: { type: Object, default: null }, // スケールフィルター設定
+})
+
 const emit = defineEmits(['question-change'])
 
 // ─── 設定 ─────────────────────────────────────────────────────────
@@ -57,6 +61,35 @@ function playClick(isDownbeat = false) {
 }
 
 function generateNewQuestion() {
+  const maxAttempts = 100 // 無限ループ防止
+  let attempts = 0
+  
+  while (attempts < maxAttempts) {
+    const stringNum = targetStrings.value[Math.floor(Math.random() * targetStrings.value.length)]
+    const noteName  = NOTES[Math.floor(Math.random() * NOTES.length)]
+    
+    // スケールフィルターが適用されている場合、音名をチェック
+    if (props.scaleFilter && props.scaleFilter.intervals) {
+      const { rootNote, intervals } = props.scaleFilter
+      const rootIndex = NOTES.indexOf(rootNote)
+      const scaleNotes = intervals.map(interval => NOTES[(rootIndex + interval) % 12])
+      
+      if (!scaleNotes.includes(noteName)) {
+        attempts++
+        continue // この音はスケールに含まれないので再生成
+      }
+    }
+    
+    const strData = OPEN_STRINGS.find(s => s.string === stringNum)
+    
+    return {
+      note: noteName,
+      string: stringNum,
+      stringLabel: strData?.label || `${stringNum}弦`,
+    }
+  }
+  
+  // フォールバック（通常は到達しない）
   const stringNum = targetStrings.value[Math.floor(Math.random() * targetStrings.value.length)]
   const noteName  = NOTES[Math.floor(Math.random() * NOTES.length)]
   const strData   = OPEN_STRINGS.find(s => s.string === stringNum)

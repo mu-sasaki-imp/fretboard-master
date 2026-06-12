@@ -27,9 +27,40 @@ export function getNoteAtFret(stringNumber, fret) {
 
 /**
  * ランダムな問題を生成する
+ * @param {Object} scaleFilter - スケールフィルター設定 { rangeMode, rootNote, scaleType, intervals }
  * @returns {{ string, fret, note, stringLabel }}
  */
-export function generateQuestion() {
+export function generateQuestion(scaleFilter = null) {
+  const maxAttempts = 100 // 無限ループ防止
+  let attempts = 0
+  
+  while (attempts < maxAttempts) {
+    const strData = OPEN_STRINGS[Math.floor(Math.random() * OPEN_STRINGS.length)]
+    const fret = Math.floor(Math.random() * (MAX_FRET + 1))
+    const note = getNoteAtFret(strData.string, fret)
+    
+    // スケールフィルターが適用されている場合、音名をチェック
+    if (scaleFilter && scaleFilter.intervals) {
+      const { rootNote, intervals } = scaleFilter
+      const rootIndex = NOTES.indexOf(rootNote)
+      const scaleNotes = intervals.map(interval => NOTES[(rootIndex + interval) % 12])
+      
+      if (!scaleNotes.includes(note)) {
+        attempts++
+        continue // この音はスケールに含まれないので再生成
+      }
+    }
+    
+    return {
+      string: strData.string,
+      fret,
+      note,
+      stringLabel: strData.label,
+    }
+  }
+  
+  // フィルターが厳しすぎて生成できなかった場合（通常は起こらない）
+  // フォールバック：フィルターなしで生成
   const strData = OPEN_STRINGS[Math.floor(Math.random() * OPEN_STRINGS.length)]
   const fret = Math.floor(Math.random() * (MAX_FRET + 1))
   const note = getNoteAtFret(strData.string, fret)

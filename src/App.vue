@@ -9,6 +9,14 @@ import { generateQuestion, getNoteAtFret, MAX_FRET } from './utils/music.js'
 import { GameSession } from './utils/session.js'
 import { recordScore } from './utils/storage.js'
 import { getGameModeSettings } from './utils/gameModes.js'
+import { playNote, TONE_TYPES, initAudioContext } from './utils/audio.js'
+import { 
+  SCALE_TYPES, 
+  ROOT_NOTES, 
+  RANGE_MODES, 
+  DEFAULT_SCALE_SETTINGS,
+  getScaleNotes
+} from './utils/scales.js'
 
 // ─── 状態 ─────────────────────────────────────────────────────────
 const currentMode  = ref('mode1')   // 'mode1' | 'mode2' | 'mode3'
@@ -20,6 +28,42 @@ const phase        = ref('question') // 'question' | 'answered'
 const isCorrect    = ref(null)
 const selectedPos  = ref(null)       // Mode2 でユーザーがクリックした位置
 const results = ref(null)            // ゲーム結果
+
+// 音再生設定
+const soundEnabled = ref(true)      // 音再生のオン/オフ
+const toneType = ref(TONE_TYPES.GUITAR) // 音色タイプ
+
+// スケール設定
+const rangeMode = ref(DEFAULT_SCALE_SETTINGS.rangeMode)  // 'random' | 'scale'
+const rootNote = ref(DEFAULT_SCALE_SETTINGS.rootNote)    // 'C', 'D', etc.
+const scaleType = ref(DEFAULT_SCALE_SETTINGS.scaleType)  // 'major', 'natural_minor'
+
+// スケールフィルターの計算
+const scaleFilter = computed(() => {
+  if (rangeMode.value === RANGE_MODES.RANDOM) {
+    return null // フィルターなし
+  }
+  
+  const scale = Object.values(SCALE_TYPES).find(s => s.id === scaleType.value)
+  return {
+    rangeMode: rangeMode.value,
+    rootNote: rootNote.value,
+    scaleType: scaleType.value,
+    intervals: scale?.intervals || null,
+  }
+})
+
+// 現在のスケールの構成音を取得
+const currentScaleNotes = computed(() => {
+  if (rangeMode.value === RANGE_MODES.RANDOM) {
+    return null // 完全ランダム
+  }
+  
+  const scale = Object.values(SCALE_TYPES).find(s => s.id === scaleType.value)
+  if (!scale || !scale.intervals) return null
+  
+  return getScaleNotes(rootNote.value, scale.intervals)
+})
 
 // ゲーム進行用タイマー
 const sessionTimer = ref(null)       // タイムアタック用タイマーID
@@ -143,7 +187,7 @@ function startGame() {
   const questions = []
   const count = settings.totalQuestions || 100 // 無制限の場合は多めに生成
   for (let i = 0; i < count; i++) {
-    questions.push(generateQuestion())
+    questions.push(generateQuestion(scaleFilter.value))
   }
   
   gameSession.value.start(questions)
@@ -179,6 +223,11 @@ function loadNextQuestion() {
   phase.value = 'question'
   isCorrect.value = null
   selectedPos.value = null
+  
+  // 音を鳴らす（soundEnabledがtrueの場合）
+  if (soundEnabled.value && question.value) {
+    playNote(question.value.string, question.value.fret, toneType.value, 1.0)
+  }
 }
 
 // 1問ごとのタイマー開始
@@ -335,6 +384,15 @@ function switchMode(mode) {
 // Mode3: 問題変更時
 function handleMode3QuestionChange(data) {
   mode3Question.value = data
+  
+  // 音を鳴らす（soundEnabledがtrueで、新しい問題が出題されたとき＝showGuideがfalseのとき）
+  if (soundEnabled.value && data && !data.showGuide) {
+    // Mode3ではfret情報がないので、弦の最初のポジション（開放弦or最も低いフレット）を鳴らす
+    const fret = findFretForNote(data.string, data.note)
+    if (fret !== null) {
+      playNote(data.string, fret, toneType.value, 1.0)
+    }
+  }
 }
 </script>
 
@@ -380,6 +438,61 @@ function handleMode3QuestionChange(data) {
       </button>
     </nav>
 
+    <!-- 音設定 -->
+    <div class="sound-settings">
+      <label class="sound-toggle">
+        <input type="checkbox" v-model="soundEnabled" @change="initAudioContext" />
+        <span class="toggle-label">🔊 出題音を鳴らす</span>
+      </label>
+      
+      <div v-if="soundEnabled" class="tone-selector">
+        <label class="tone-option">
+          <input type="radio" v-model="toneType" :value="TONE_TYPES.GUITAR" name="toneType" />
+          <span>ギター風</span>
+        </label>
+        <label class="tone-option">
+          <input type="radio" v-model="toneType" :value="TONE_TYPES.SINE" name="toneType" />
+          <span>シンプル</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 出題範囲設定 -->
+    <div class="range-settings">
+      <div class="range-mode-selector">
+        <label class="range-mode-option">
+          <input type="radio" v-model="rangeMode" :value="RANGE_MODES.RANDOM" name="rangeMode" />
+          <span>完全ランダム</span>
+        </label>
+        <label class="range-mode-option">
+          <input type="radio" v-model="rangeMode" :value="RANGE_MODES.SCALE" name="rangeMode" />
+          <span>キー・スケール指定</span>
+        </label>
+      </div>
+      
+      <div v-if="rangeMode === RANGE_MODES.SCALE" class="scale-selector">
+        <label class="scale-select-label">
+          <span>キー:</span>
+          <select v-model="rootNote" class="scale-select">
+            <option v-for="note in ROOT_NOTES" :key="note" :value="note">{{ note }}</option>
+          </select>
+        </label>
+        
+        <label class="scale-select-label">
+          <span>スケール:</span>
+          <select v-model="scaleType" class="scale-select">
+            <option v-for="scale in Object.values(SCALE_TYPES)" :key="scale.id" :value="scale.id">
+              {{ scale.name }}
+            </option>
+          </select>
+        </label>
+        
+        <div v-if="currentScaleNotes" class="scale-notes">
+          → {{ currentScaleNotes.join(', ') }}
+        </div>
+      </div>
+    </div>
+
     <!-- Mode3: 練習アシストモード -->
     <template v-if="currentMode === 'mode3'">
       <section class="fretboard-section">
@@ -388,7 +501,10 @@ function handleMode3QuestionChange(data) {
           :active-string="activeString"
         />
       </section>
-      <Mode3Panel @question-change="handleMode3QuestionChange" />
+      <Mode3Panel 
+        :scale-filter="scaleFilter"
+        @question-change="handleMode3QuestionChange" 
+      />
     </template>
 
     <!-- Mode1 & Mode2: ゲームモード選択 or プレイ画面 -->
@@ -455,6 +571,13 @@ function handleMode3QuestionChange(data) {
         @menu="handleBackToMenu"
       />
     </template>
+
+    <!-- フッター -->
+    <footer class="app-footer">
+      <span class="footer-text">© 2026 @mu_sasaki_imp</span>
+      <span class="footer-divider">|</span>
+      <span class="footer-version">v1.1.0</span>
+    </footer>
 
   </div>
 </template>
@@ -547,6 +670,143 @@ function handleMode3QuestionChange(data) {
   color: #c0a880;
 }
 
+/* 音設定 */
+.sound-settings {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  background: rgba(26, 21, 32, 0.4);
+  border-radius: 10px;
+  font-size: 14px;
+  color: #c0a880;
+}
+
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sound-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-weight: 600;
+}
+
+.tone-selector {
+  display: flex;
+  gap: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #3a2f48;
+}
+
+.tone-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.tone-option:hover {
+  color: #fbbf24;
+}
+
+.tone-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* 出題範囲設定 */
+.range-settings {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  background: rgba(26, 21, 32, 0.4);
+  border-radius: 10px;
+  font-size: 14px;
+  color: #c0a880;
+}
+
+.range-mode-selector {
+  display: flex;
+  gap: 12px;
+}
+
+.range-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.range-mode-option:hover {
+  color: #fbbf24;
+}
+
+.range-mode-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.scale-selector {
+  display: flex;
+  gap: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #3a2f48;
+}
+
+.scale-select-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.scale-select {
+  padding: 4px 8px;
+  background: #1a1520;
+  border: 1px solid #3a2f48;
+  border-radius: 6px;
+  color: #c0a880;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.scale-select:hover {
+  border-color: #fbbf24;
+}
+
+.scale-select:focus {
+  outline: none;
+  border-color: #fbbf24;
+}
+
+.scale-notes {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #3a2f48;
+  color: #fbbf24;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* 進捗バー */
 .progress-bar {
   width: 100%;
@@ -593,5 +853,31 @@ function handleMode3QuestionChange(data) {
   max-width: 960px;
   display: flex;
   justify-content: center;
+}
+
+/* フッター */
+.app-footer {
+  margin-top: auto;
+  padding-top: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: #7a6a50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.footer-text {
+  color: #7a6a50;
+}
+
+.footer-divider {
+  color: #3a2f48;
+}
+
+.footer-version {
+  color: #fbbf24;
+  font-weight: 600;
 }
 </style>
